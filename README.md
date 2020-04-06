@@ -2,7 +2,7 @@
 
 The original repo is [here](https://github.com/taylorlu/Speaker-Diarization).
 
-The original repo has a great speaker diarization model using vgg and uis-rnn. Hats off to [taylorlu](https://github.com/taylorlu)
+The original repo has a great speaker diarization model using vgg and uis-rnn. Hats off to [taylorlu](https://github.com/taylorlu)!!
 
 Made some tweaks in the final file SpeakerDiarization.py to actually have the transciption.
 
