@@ -220,9 +220,9 @@ def print_transcipt():
     This function sorts the final_transcript dictionary according to the time stamps and prints
     the final transcript
 
-    Does not take or return any arguments
+    Returns:
+        ordered_transcript (list) : Sorted transcripts are stored as (speaker, start time, end time, speech)
     """
-    # Sorted transcripts are stored as (speaker, start time, end time, speech)
     ordered_transcript = []
     index = 0
     for speaker in final_transcript:
@@ -240,10 +240,7 @@ def print_transcipt():
                         index = i+1
                         break
             ordered_transcript = ordered_transcript[:index] + [(speaker, start, end, speech)] + ordered_transcript[index:]
-    for item in ordered_transcript:
-        start = fmtTime(item[1])
-        end = fmtTime(item[2])
-        print(f"{start} ==> {end}: [Speaker : {item[0]}] : {item[3]}")
+    return ordered_transcript
 
 
 def main(wav_path, embedding_per_second=1.0, overlap_rate=0.5, retain_audio_clip=False):
@@ -310,13 +307,47 @@ def main(wav_path, embedding_per_second=1.0, overlap_rate=0.5, retain_audio_clip
             s = timeDict['start']
             e = timeDict['stop']
             get_transcript(str(spk), s, e)
-            
-    print_transcipt()
 
     if not retain_audio_clip:
-        shutil.rmtree('audio_clips')
+        shutil.rmtree({dir_name})
     else:
         print(f'Audio files of transcriptions can be found in {dir_name} folder')
+
+    result = print_transcipt()
+    for item in result:
+        start = fmtTime(item[1])
+        end = fmtTime(item[2])
+        print(f"{start} ==> {end}: [Speaker : {item[0]}] : {item[3]}")
+
+    return result
+
+
+def server_entry_point(inputs):
+    """
+    Entry point for server call
+
+    Args:
+        inputs (dict) : Should contain keys, username(str), audio_file(base64 encoded string) and create_output_directory(0 or 1)
+
+    Returns:
+        The final transcription in a dict format
+    """
+    import base64
+    global dir_name
+    timestamp = str(datetime.now())
+    timestamp = timestamp[11:19].replace(':', '')
+    decode_string = base64.b64decode(inputs["audio_file"])
+    audio_file_name = "Audio_" + timestamp + ".wav"
+    file = open(audio_file_name, "wb")
+    file.write(decode_string)
+    file.close()
+    dir_name = inputs["username"] + timestamp
+    os.mkdir(dir_name)
+    load_audio(audio_file_name)
+    result = main(audio_file_name,
+         embedding_per_second=1.2,
+         overlap_rate=0.4)
+    return {"finalTranscipt": result}
 
 
 if __name__ == '__main__':
@@ -332,5 +363,13 @@ if __name__ == '__main__':
          embedding_per_second=1.2,
          overlap_rate=0.4,
          retain_audio_clip=True if inputs['create_output_directory'] == 1 else False)
+
+
+# InsecureRequestWarning: Unverified HTTPS request is being made to host 'api.eu-gb.speech-to-text.watson.cloud.ibm.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
+#   InsecureRequestWarning,
+
+# Fix %hesitation
+
+# Combine audio segemnt of same speakers into one and then save
 
 
