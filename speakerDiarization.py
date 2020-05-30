@@ -47,6 +47,7 @@ SAVED_MODEL_NAME = 'pretrained/saved_model.uisrnn_benchmark'
 audio_input = None
 final_transcript = {}
 dir_name = ''
+print("I'me here suckersss...............")
 
 
 def load_audio(audio_file_path):
@@ -308,16 +309,16 @@ def main(wav_path, embedding_per_second=1.0, overlap_rate=0.5, retain_audio_clip
             e = timeDict['stop']
             get_transcript(str(spk), s, e)
 
-    if not retain_audio_clip:
-        shutil.rmtree({dir_name})
-    else:
-        print(f'Audio files of transcriptions can be found in {dir_name} folder')
-
     result = print_transcipt()
     for item in result:
         start = fmtTime(item[1])
         end = fmtTime(item[2])
         print(f"{start} ==> {end}: [Speaker : {item[0]}] : {item[3]}")
+
+    if not retain_audio_clip:
+        shutil.rmtree(dir_name)
+    else:
+        print(f'Audio files of transcriptions can be found in {dir_name} folder')
 
     return result
 
