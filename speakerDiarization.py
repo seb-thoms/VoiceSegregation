@@ -42,12 +42,11 @@ global args
 args = parser.parse_args()
 
 
-SAVED_MODEL_NAME = 'pretrained/saved_model.uisrnn_benchmark'
+SAVED_MODEL_NAME = 'pretrained/saved_model(500).uisrnn_benchmark'
 
 audio_input = None
 final_transcript = {}
 dir_name = ''
-print("I'me here suckersss...............")
 
 
 def load_audio(audio_file_path):
@@ -207,11 +206,18 @@ def get_transcript(speaker, start_time, end_time):
         audio_clip = audio_input[start_time:end_time]
         audio_clip.export(dir_name + audio_file_name, format='wav')
         transcript = speech2text(dir_name + audio_file_name)
+        os.remove(dir_name + audio_file_name)
 
         if speaker in final_transcript.keys():
             final_transcript[speaker].append((start_time, end_time, transcript))
+            speaker_audio = AudioSegment.from_wav(dir_name + '/Speaker' + speaker +'.wav')
+            merged = speaker_audio + audio_clip
+            merged.export(dir_name + '/Speaker' + speaker, format='wav' )
         else:
             final_transcript[speaker] = [(start_time, end_time, transcript)]
+            speaker_file_name = '/Speaker' + speaker
+            speaker_file_name += '.wav'
+            audio_clip.export(dir_name + speaker_file_name, format='wav')
     except Exception as exp:
         print(f"Failed in get_transcript with error {exp}")
 
@@ -320,6 +326,10 @@ def main(wav_path, embedding_per_second=1.0, overlap_rate=0.5, retain_audio_clip
     else:
         print(f'Audio files of transcriptions can be found in {dir_name} folder')
 
+    p = PlotDiar(map=speakerSlice, wav=wav_path, gui=True, size=(25, 6))
+    p.draw()
+    p.plot.show()
+
     return result
 
 
@@ -348,21 +358,34 @@ def server_entry_point(inputs):
     result = main(audio_file_name,
          embedding_per_second=1.2,
          overlap_rate=0.4)
+    print("server", result)
     return {"finalTranscipt": result}
 
 
 if __name__ == '__main__':
     input_json = open('input.json')
     inputs = json.load(input_json)
+    
+    # Time stamp is used to create an output directory of separate audio files
     timestamp = str(datetime.now())
     timestamp = timestamp[11:19].replace(':', '')
     dir_name = inputs["audio_file_path"].split('/').pop() + timestamp
     os.mkdir(dir_name)
     audio_file_path = inputs["audio_file_path"]
+
+    # To handle incoming mp3 files. Converts mp3 to wav
+    if audio_file_path.endswith(".mp3"):
+        audio = AudioSegment.from_mp3(audio_file_path)
+        audio_file_path = audio_file_path[:-4]+".wav"
+        audio.export(audio_file_path, format="wav")
+    
+    # audio file is loaded
     load_audio(audio_file_path)
+
+    # Voice Separation function call
     main(audio_file_path,
          embedding_per_second=1.2,
-         overlap_rate=0.4,
+         overlap_rate=0.8,
          retain_audio_clip=True if inputs['create_output_directory'] == 1 else False)
 
 
