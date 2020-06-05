@@ -210,9 +210,9 @@ def get_transcript(speaker, start_time, end_time):
 
         if speaker in final_transcript.keys():
             final_transcript[speaker].append((start_time, end_time, transcript))
-            speaker_audio = AudioSegment.from_wav(dir_name + '/Speaker' + speaker +'.wav')
+            speaker_audio = AudioSegment.from_wav(dir_name + '/Speaker' + speaker + '.wav')
             merged = speaker_audio + audio_clip
-            merged.export(dir_name + '/Speaker' + speaker, format='wav' )
+            merged.export(dir_name + '/Speaker' + speaker + '.wav', format='wav' )
         else:
             final_transcript[speaker] = [(start_time, end_time, transcript)]
             speaker_file_name = '/Speaker' + speaker
@@ -316,10 +316,18 @@ def main(wav_path, embedding_per_second=1.0, overlap_rate=0.5, retain_audio_clip
             get_transcript(str(spk), s, e)
 
     result = print_transcipt()
-    for item in result:
-        start = fmtTime(item[1])
-        end = fmtTime(item[2])
-        print(f"{start} ==> {end}: [Speaker : {item[0]}] : {item[3]}")
+    try:
+        for item in result:
+            start = fmtTime(item[1])
+            end = fmtTime(item[2])
+            file = open(os.path.join(dir_name, 'FinalTranscript.txt'), 'a')
+            transcription = f"{start} ==> {end}: [Speaker : {item[0]}] : {item[3]}"
+            print(transcription)
+            file.write(transcription)
+    except Exception as exp:
+        print(f"Failed in main() while writing to file with exception {exp}")
+    finally:
+        file.close()
 
     if not retain_audio_clip:
         shutil.rmtree(dir_name)
